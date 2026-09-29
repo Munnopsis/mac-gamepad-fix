@@ -1,0 +1,141 @@
+#!/bin/bash
+set -euo pipefail
+
+BASE="$(cd "$(dirname "$0")" && pwd)"
+
+if [ -d "$BASE/steam" ]; then
+    STEAMFIX="$BASE/steam"
+elif [ -d "$BASE/vendor/steam" ]; then
+    STEAMFIX="$BASE/vendor/steam"
+else
+    echo "ERROR: MacGamepadFix Steam runtime not found."
+    exit 1
+fi
+
+STEAMEXE="$HOME/Library/Application Support/Steam/Steam.AppBundle/Steam/Contents/MacOS/steam_osx"
+
+if [ ! -x "$STEAMEXE" ]; then
+    echo "ERROR: Steam executable not found:"
+    echo "$STEAMEXE"
+    exit 1
+fi
+
+if [ ! -f "$STEAMFIX/libSDL3.dylib" ]; then
+    echo "ERROR: libSDL3.dylib missing."
+    exit 1
+fi
+
+if [ ! -f "$STEAMFIX/libusb-1.0.0.dylib" ]; then
+    echo "ERROR: libusb-1.0.0.dylib missing."
+    exit 1
+fi
+
+
+status()
+{
+    PID="$(pgrep -x steam_osx | head -1 || true)"
+
+    if [ -z "$PID" ]; then
+        echo "Steam: not running"
+        return 1
+    fi
+
+    echo "Steam PID: $PID"
+
+    if lsof -p "$PID" 2>/dev/null |
+        grep -F "$STEAMFIX/libSDL3.dylib" >/dev/null; then
+
+        echo "MacGamepadFix SDL: active"
+
+        if lsof -p "$PID" 2>/dev/null |
+            grep -F "$STEAMFIX/libusb-1.0.0.dylib" >/dev/null; then
+
+            echo "MacGamepadFix libusb: active"
+        else
+            echo "MacGamepadFix libusb: not currently mapped"
+        fi
+
+        return 0
+    fi
+
+    echo "MacGamepadFix SDL: NOT active"
+    return 2
+}
+
+
+case "${1:-}" in
+
+    --status)
+        status
+        exit $?
+        ;;
+
+    --restart)
+        echo "Stopping Steam..."
+
+        osascript \
+            -e 'quit app "Steam"' \
+            2>/dev/null || true
+
+        sleep 3
+
+        pkill -TERM -x steam_osx \
+            2>/dev/null || true
+
+        sleep 1
+        ;;
+
+    --help|-h)
+        echo "MacGamepadFix Steam Launcher"
+        echo
+        echo "Usage:"
+        echo "  ./MacGamepadFix-Steam"
+        echo "  ./MacGamepadFix-Steam --restart"
+        echo "  ./MacGamepadFix-Steam --status"
+        exit 0
+        ;;
+
+    "")
+        ;;
+
+    *)
+        echo "Unknown option: $1"
+        exit 1
+        ;;
+esac
+
+
+PID="$(pgrep -x steam_osx | head -1 || true)"
+
+if [ -n "$PID" ]; then
+    if status >/dev/null 2>&1; then
+        echo "Steam is already running with MacGamepadFix."
+        exit 0
+    fi
+
+    echo
+    echo "ERROR: Steam is already running without the"
+    echo "MacGamepadFix SDL runtime."
+    echo
+    echo "Restart it with:"
+    echo
+    echo "  ./MacGamepadFix-Steam --restart"
+    exit 2
+fi
+
+
+echo "Starting Steam with MacGamepadFix..."
+echo "SDL:    $STEAMFIX/libSDL3.dylib"
+echo "libusb: $STEAMFIX/libusb-1.0.0.dylib"
+echo
+
+DYLD_LIBRARY_PATH="$STEAMFIX" \
+SDL_HIDAPI_LIBUSB=1 \
+SDL_HIDAPI_LIBUSB_WHITELIST=0 \
+SDL_JOYSTICK_HIDAPI=1 \
+SDL_JOYSTICK_HIDAPI_XBOX=1 \
+SDL_JOYSTICK_HIDAPI_XBOX_360=1 \
+"$STEAMEXE" \
+>/tmp/macgamepadfix-steam.log 2>&1 &
+
+echo "Steam started."

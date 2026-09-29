@@ -1,0 +1,61 @@
+#!/bin/bash
+set -euo pipefail
+
+BASE="$(cd "$(dirname "$0")" && pwd)"
+STEAM_LAUNCHER="$BASE/MacGamepadFix-Steam"
+CFG="$HOME/Library/Preferences/DeadIsland/MacNoEditor"
+ENGINE="$CFG/Engine.ini"
+BACKUP="$ENGINE.before-macgamepadfix-hid"
+APP_ID="934700"
+
+echo "== MacGamepadFix: Dead Island 2 =="
+
+if [ ! -x "$STEAM_LAUNCHER" ]; then
+    echo "ERROR: MacGamepadFix-Steam not found."
+    exit 1
+fi
+
+if ! "$STEAM_LAUNCHER" --status >/dev/null 2>&1; then
+    echo "ERROR: Steam is not running with the MacGamepadFix runtime."
+    echo
+    echo "Start or restart Steam with:"
+    echo "  ./MacGamepadFix-Steam --restart"
+    exit 2
+fi
+
+echo "Steam runtime: OK"
+
+if [ ! -f "$ENGINE" ]; then
+    echo "ERROR: Dead Island 2 Engine.ini not found:"
+    echo "$ENGINE"
+    echo
+    echo "Start Dead Island 2 once normally, quit it, then retry."
+    exit 1
+fi
+
+if grep -q "^Slate\.MacControllerPreferGCImpl=0$" "$ENGINE"; then
+    echo "UE4 controller backend: HID already configured"
+else
+    if [ ! -f "$BACKUP" ]; then
+        cp -p "$ENGINE" "$BACKUP"
+        echo "Engine.ini backup created:"
+        echo "$BACKUP"
+    fi
+
+    if grep -q "^Slate\.MacControllerPreferGCImpl=" "$ENGINE"; then
+        sed -i "" "s/^Slate\.MacControllerPreferGCImpl=.*/Slate.MacControllerPreferGCImpl=0/" "$ENGINE"
+    else
+        printf "\n[SystemSettings]\nSlate.MacControllerPreferGCImpl=0\n" >> "$ENGINE"
+    fi
+
+    echo "UE4 controller backend: HID configured"
+fi
+
+echo
+echo "Steam Input requirement:"
+echo "  Dead Island 2 -> Properties -> Controller"
+echo "  Override: Enable Steam Input"
+echo
+echo "Starting Dead Island 2..."
+
+open "steam://rungameid/$APP_ID"

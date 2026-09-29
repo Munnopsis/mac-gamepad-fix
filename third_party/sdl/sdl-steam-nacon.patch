@@ -1,0 +1,39 @@
+diff --git a/src/SDL.c b/src/SDL.c
+index b96ee54aa..7a2e0422c 100644
+--- a/src/SDL.c
++++ b/src/SDL.c
+@@ -973,3 +973,13 @@ BOOL APIENTRY MINGW32_FORCEALIGN _DllMainCRTStartup(HANDLE hModule, DWORD ul_rea
+ #endif // Building DLL
+ 
+ #endif // defined(SDL_PLATFORM_WIN32)
++
++#if defined(__APPLE__)
++#include <stdlib.h>
++
++__attribute__((constructor))
++static void NaconSteamClearDYLDLibraryPath(void)
++{
++    unsetenv("DYLD_LIBRARY_PATH");
++}
++#endif
+diff --git a/src/joystick/hidapi/SDL_hidapijoystick.c b/src/joystick/hidapi/SDL_hidapijoystick.c
+index 26a9def36..eacfd4618 100644
+--- a/src/joystick/hidapi/SDL_hidapijoystick.c
++++ b/src/joystick/hidapi/SDL_hidapijoystick.c
+@@ -1170,6 +1170,16 @@ check_removed:
+     while (device) {
+         SDL_HIDAPI_Device *next = device->next;
+ 
++        if (!device->seen &&
++            device->vendor_id == 0x146b &&
++            device->product_id == 0x0603 &&
++            device->num_joysticks > 0 &&
++            device->dev) {
++            SDL_LogDebug(SDL_LOG_CATEGORY_INPUT,
++                         "Nacon 146b:0603 missed HIDAPI re-enumeration; keeping live libusb device");
++            device->seen = true;
++        }
++
+         if (!device->seen ||
+             ((device->driver || device->children) && device->num_joysticks == 0 && !device->dev)) {
+             if (device->parent) {
