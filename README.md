@@ -2,6 +2,15 @@
 
 **macOS gamepad compatibility layer for affected games and Unity Input System configurations.**
 
+<p align="center">
+  <a href="docs/assets/macgamepadfix-overview.png">
+    <img src="docs/assets/macgamepadfix-overview.png"
+         alt="MacGamepadFix architecture overview"
+         width="100%">
+  </a><br>
+  <sub><em>Compatibility flow from physical controller input through Steam/SDL to the game-specific runtime integration.</em></sub>
+</p>
+
 Current release: **1.1.0**
 
 MacGamepadFix provides game-specific compatibility paths for wired gamepads that are detected by macOS but are mapped incorrectly or exposed through an incompatible controller backend.

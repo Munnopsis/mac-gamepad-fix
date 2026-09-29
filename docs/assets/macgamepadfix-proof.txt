@@ -1,0 +1,33 @@
+$ ./MacGamepadFix-Steam --status
+Steam PID: 83208
+MacGamepadFix SDL: active
+MacGamepadFix libusb: active
+
+$ ./dist/MacGamepadFix --profile combat-master --dry-run --verbose
+MacGamepadFix 1.1.0
+Game:           ~/Library/Application Support/Steam/steamapps/common/Combat Master/CombatMaster.app/Contents/MacOS/Combat Master
+Left Stick Y:   invert
+Right Stick Y:  invert
+GameController: block
+Steam App ID:   2281730
+Driver:         ~/Code/Controller Driver/MacGamepadFix/dist/lib/libMacGamepadFix.dylib
+GC blocker:     ~/Code/Controller Driver/MacGamepadFix/dist/lib/libMacGamepadFixGCBlock.dylib
+
+$ verify running Combat Master process
+Combat Master: running
+
+Loaded MacGamepadFix compatibility libraries:
+  libMacGamepadFix.dylib
+  libMacGamepadFixGCBlock.dylib
+
+Driver validation log:
+RegisterLayout exception=0x0
+RegisterLayoutMatcher exception=0x0
+TryFindMatchingLayout = HID::Microsoft GamePad-1
+exception=0x0
+
+GameController blocker log:
+GCDisable installed
+BLOCKED GCControllerDidConnectNotification
+BLOCKED GCControllerDidDisconnectNotification
+GCController.controllers -> EMPTY
